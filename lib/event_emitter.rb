@@ -48,43 +48,42 @@ module EventEmitter
         # # duration: event.duration
         # }
 
-        unless start.is_a? Time
-          puts "start is not Time: #{start.inspect}"
-          return
-        end
+        if start.is_a? Time
+          packet_hash = {
+            source_type: 'rails',
+            event_type: name,
+            payload: payload,
+            timestamp: start.strftime('%H:%M:%S:(%L)'),
+            start_milliseconds: (start.to_f * 1000.0).to_i,
+            duration: ((finish - start) * 1000.0).to_i
+          }
 
-        packet_hash = {
-          source_type: 'rails',
-          event_type: name,
-          payload: payload,
-          timestamp: start.strftime('%H:%M:%S:(%L)'),
-          start_milliseconds: (start.to_f * 1000.0).to_i,
-          duration: ((finish - start) * 1000.0).to_i
-        }
+          # ignore any exceptions when sending udp packets
+          begin
+            with_connection do |s|
+              packet = packet_hash.to_json
+              if packet.length > @max_size
+                packet = {
+                  source_type: packet_hash[:source_type],
+                  event_type: 'error',
+                  reason: "packet is too large"
+                }.to_json
+              end
 
-        # ignore any exceptions when sending udp packets
-        begin
-          with_connection do |s|
-            packet = packet_hash.to_json
-            if packet.length > @max_size
-              packet = {
-                source_type: packet_hash[:source_type],
-                event_type: 'error',
-                reason: "packet is too large"
-              }.to_json
+              s.send(packet, 0, @host, @port)
+              nil
             end
-
-            s.send(packet, 0, @host, @port)
-            nil
+          rescue Exception
           end
-        rescue Exception
-        end
 
-        # key = "#{controller}.#{action}.#{format}.#{ENV["INSTRUMENTATION_HOSTNAME"]}"
-        # ActiveSupport::Notifications.instrument :performance, :action => :timing, :measurement => "#{key}.total_duration", :value => event.duration
-        # ActiveSupport::Notifications.instrument :performance, :action => :timing, :measurement => "#{key}.db_time", :value => event.payload[:db_runtime]
-        # ActiveSupport::Notifications.instrument :performance, :action => :timing, :measurement => "#{key}.view_time", :value => event.payload[:view_runtime]
-        # ActiveSupport::Notifications.instrument :performance, :measurement => "#{key}.status.#{status}"
+          # key = "#{controller}.#{action}.#{format}.#{ENV["INSTRUMENTATION_HOSTNAME"]}"
+          # ActiveSupport::Notifications.instrument :performance, :action => :timing, :measurement => "#{key}.total_duration", :value => event.duration
+          # ActiveSupport::Notifications.instrument :performance, :action => :timing, :measurement => "#{key}.db_time", :value => event.payload[:db_runtime]
+          # ActiveSupport::Notifications.instrument :performance, :action => :timing, :measurement => "#{key}.view_time", :value => event.payload[:view_runtime]
+          # ActiveSupport::Notifications.instrument :performance, :measurement => "#{key}.status.#{status}"
+        else
+          puts "start is not Time: #{start.inspect}"
+        end
       end
     end
   end
