@@ -48,6 +48,11 @@ module EventEmitter
         # # duration: event.duration
         # }
 
+        unless start.is_a? Time
+          puts "start is not Time: #{start.inspect}"
+          return
+        end
+
         packet_hash = {
           source_type: 'rails',
           event_type: name,
