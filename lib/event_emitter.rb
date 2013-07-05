@@ -57,8 +57,6 @@ module EventEmitter
           duration: ((finish - start) * 1000.0).to_i
         }
 
-        puts packet_hash.inspect
-
         # ignore any exceptions when sending udp packets
         begin
           with_connection do |s|
