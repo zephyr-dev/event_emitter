@@ -6,7 +6,7 @@ TODO: Write a gem description
 
 Add this line to your application's Gemfile:
 
-    gem 'event_emitter'
+    gem 'event_emitter', git: "git@github.com:ababkin/event_emitter.git"
 
 And then execute:
 
